@@ -938,7 +938,7 @@ class MCL {
         output .= t 'switch A_PtrSize {`n'
 
         /** @type {MCL.CompiledCode} */
-        compiledCode := unset
+        compiledCode := unset, hasRelocations := false
         for compiledCode in compiledCodes {
             output .= t '`tcase ' compiledCode.bitness // 8 ': '
 
@@ -966,7 +966,7 @@ class MCL {
 
             base64Wrapped := '""'
             while StrLen(base64) {
-                base64Wrapped .= '`n. "' SubStr(base64, 1, 120 - 8) '"'
+                base64Wrapped .= '`n`t`t`t. "' SubStr(base64, 1, 120 - 8) '"'
                 base64 := SubStr(base64, (120 - 8) + 1)
             }
 
@@ -978,7 +978,8 @@ class MCL {
             if exports != '{}'
                 output .= 'exports := ' exports ', '
             if relocations != '[]'
-                output .= 'relocations := ' relocations ', '
+                hasRelocations := true
+            output .= 'relocations := ' relocations ', '
             output .= 'b64 := ' base64Wrapped '`n'
 
             lastCompiledCode := compiledCode
@@ -1022,12 +1023,13 @@ class MCL {
             )
         }
 
-        if relocations != '[]' {
+        if hasRelocations {
             output .= (
                 t 'for offset in relocations`n'
                 t '`tNumPut("Ptr", NumGet(code, offset, "Ptr") + code.Ptr, code, offset)`n'
             )
-        }
+        } else
+            output := StrReplace(output, 'relocations := [], ')
 
         output .= (
             t 'if !DllCall("VirtualProtect", "Ptr", code, "Ptr", code.Size, "UInt", 0x40, "UInt*", &old := 0, "UInt")`n'
@@ -1083,8 +1085,9 @@ class MCL {
                 output .= ') => DllCall(exports.' name
                 for i, v in StrSplit(export.types, "$")
                     output .= ', ' (i & 1 ? '"' StrReplace(v, '_', ' ') '"' : v)
-                output .= ')`n'
+                output .= '),`n'
             }
+            output := RTrim(output, ',`n') '`n'
             output .= '`t}'
             for name, export in exports['g'] {
                 output .= (
