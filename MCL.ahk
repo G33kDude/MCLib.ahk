@@ -1087,7 +1087,7 @@ class MCL {
                     output .= ', ' (i & 1 ? '"' StrReplace(v, '_', ' ') '"' : v)
                 output .= '),`n'
             }
-            output := RTrim(output, ",`n") "`n"
+            output := RTrim(output, ',`n') '`n'
             output .= '`t}'
             for name, export in exports['g'] {
                 output .= (
